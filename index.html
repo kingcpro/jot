@@ -40,8 +40,9 @@
   .wrap{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 18px 72px}
 
   /* ---------- 顶部 ---------- */
-  .top{display:flex;align-items:center;justify-content:space-between;padding:24px 0 16px}
-  .brand{display:flex;gap:12px;align-items:center}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 0 16px}
+  .brand{display:flex;gap:12px;align-items:center;min-width:0}
+  .brand > div{min-width:0}
   .logo{
     width:44px;height:44px;border-radius:14px;flex:none;
     background:linear-gradient(160deg,#ea6a4c,#c9432b);color:#fff;
@@ -49,7 +50,7 @@
     box-shadow:0 8px 20px -10px rgba(201,67,43,.95);
   }
   h1{font-size:19px;margin:0;letter-spacing:.6px}
-  .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ghost{
     border:1px solid var(--line);background:#fff;border-radius:12px;
     width:40px;height:40px;display:grid;place-items:center;cursor:pointer;
@@ -217,7 +218,7 @@
     h1{font-size:18px}
   }
   /* ---------- added for i18n / calendar / PWA ---------- */
-  .top-actions{display:flex;gap:8px;align-items:center}
+  .top-actions{display:flex;gap:8px;align-items:center;flex:none}
   .ghost.lang{width:auto;min-width:40px;padding:0 11px;font-size:12.5px;font-weight:600;letter-spacing:.4px;font-family:inherit}
   .foot span{display:block}
   .linkbtn{
@@ -227,6 +228,34 @@
   }
   .linkbtn:hover{color:var(--accent)}
   .linkbtn[hidden]{display:none}
+  .ghost[hidden]{display:none}
+
+  /* ---------- done log (archive) ---------- */
+  .group-head.done-bar{
+    width:100%;margin:26px 0 11px;padding:4px;border:0;background:transparent;text-align:left;
+    font-family:inherit;font-size:12.5px;letter-spacing:.5px;color:var(--muted);cursor:pointer;
+    border-radius:8px;
+  }
+  .group-head.done-bar::after{order:2}
+  .group-head.done-bar .chev{order:3;margin-left:-3px;color:#c9c0b6;font-size:15px;line-height:1}
+  .group-head.done-bar:hover{color:var(--accent-2)}
+  .group-head.done-bar:hover .chev{color:var(--accent)}
+
+  .sheet-panel.log{max-height:78vh;min-height:260px;display:flex;flex-direction:column}
+  .log-head{display:flex;align-items:baseline;gap:8px;margin:0 0 6px}
+  .log-head h3{margin:0}
+  .log-head .n{font-size:12.5px;color:var(--muted)}
+  .log-list{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .log-day{font-size:11.5px;letter-spacing:.9px;color:#b6ada3;margin:15px 2px 5px;text-transform:uppercase}
+  .log-day:first-child{margin-top:2px}
+  .log-row{display:flex;align-items:center;gap:4px;padding:8px 2px;border-bottom:1px solid var(--line)}
+  .log-row:last-child{border-bottom:0}
+  .log-row .t{flex:1;min-width:0;font-size:14.5px;color:var(--ink-2);word-break:break-word}
+  .log-row .h{flex:none;font-size:12px;color:#b6ada3;margin-right:2px}
+  .log-empty{padding:34px 0 26px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.7}
+  .log-foot{margin-top:8px;padding-top:11px;border-top:1px solid var(--line);text-align:center}
+  .log-foot .linkbtn{margin-top:0;color:#a89d92;text-decoration:none}
+  .log-foot .linkbtn:hover{color:var(--accent);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -240,6 +269,13 @@
       </div>
     </div>
     <div class="top-actions">
+      <button class="ghost" id="exportAll" data-i18n-title="exportAll" aria-label="Add all reminders to Calendar" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">
+          <rect x="3.3" y="5" width="17.4" height="15.6" rx="3.2"/>
+          <path d="M8 3.2v3.4M16 3.2v3.4M3.3 10.2h17.4"/>
+          <path d="M12 13.2v4.2M9.9 15.3h4.2"/>
+        </svg>
+      </button>
       <button class="ghost lang" id="langBtn" aria-label="Switch language">中</button>
       <button class="ghost" id="soundBtn" aria-label="Sound">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">
@@ -272,7 +308,6 @@
   <footer class="foot">
     <span data-i18n="foot1"></span>
     <span data-i18n="foot2"></span>
-    <button type="button" class="linkbtn" id="exportAll" hidden></button>
   </footer>
 </div>
 
@@ -308,6 +343,21 @@
       <button type="button" data-repeat="monthly" data-i18n="repMonthly">Monthly</button>
     </div>
     <button type="button" class="primary block" id="sheetSave" data-i18n="save">Save reminder</button>
+  </div>
+</div>
+
+<div class="sheet" id="logSheet">
+  <div class="sheet-mask" data-close="1"></div>
+  <div class="sheet-panel log" role="dialog" aria-modal="true">
+    <div class="grip"></div>
+    <div class="log-head">
+      <h3 id="logTitle">Done</h3>
+      <span class="n" id="logCount"></span>
+    </div>
+    <div class="log-list" id="logList"></div>
+    <div class="log-foot" id="logFoot">
+      <button type="button" class="linkbtn" id="logClear" hidden>Clear all completed</button>
+    </div>
   </div>
 </div>
 
@@ -370,6 +420,12 @@
       foot1: 'Everything stays on this device — no account, no server.',
       foot2: 'The alarm rings only while Jot is open. Add a reminder to your calendar when it has to fire with the app closed.',
       exportAll: 'Add all reminders to Calendar',
+      logEmpty: 'Nothing completed yet. Tick a reminder off and it lands here, grouped by day.',
+      logTrimmed: 'Showing the latest {n} of {total}.',
+      clearDone: 'Clear all completed',
+      clearedN: 'Cleared {n} completed',
+      pruned: 'Storage was full — trimmed {n} older completed jots',
+      storageFull: 'Storage is full — the last change may not survive a reload',
       sheetAria: 'Pick a time',
       sheetTitle: 'Pick a time',
       sheetWhat: 'What',
@@ -450,6 +506,12 @@
       foot1: '数据只存在这台设备上，没有账号，没有服务器。',
       foot2: '闹铃需要 Jot 开着才会响；要关掉也响，把提醒加进日历即可。',
       exportAll: '把提醒全部加进日历',
+      logEmpty: '还没有完成的事。勾掉一条，它就会归档到这里，按天分组。',
+      logTrimmed: '只显示最近 {n} 条，共 {total} 条。',
+      clearDone: '清空已完成',
+      clearedN: '已清空 {n} 条完成记录',
+      pruned: '存储空间满了，自动清理了 {n} 条较早的完成记录',
+      storageFull: '存储空间已满，刚才的改动可能不会被保存',
       sheetAria: '选时间',
       sheetTitle: '选个时间',
       sheetWhat: '做什么',
@@ -547,8 +609,40 @@
     }catch(e){}
     if(settings.lang !== 'zh') settings.lang = 'en';
   }
-  function persist(){ try{ localStorage.setItem(KEY_ITEMS, JSON.stringify(items)); }catch(e){} }
   function persistSet(){ try{ localStorage.setItem(KEY_SET, JSON.stringify(settings)); }catch(e){} }
+
+  function writeItems(list){
+    try{ localStorage.setItem(KEY_ITEMS, JSON.stringify(list)); return true; }
+    catch(e){ return false; }
+  }
+
+  // localStorage has a hard quota (~5 MB). Silently swallowing the error means the
+  // newest jot never reaches disk — the worst possible failure for a reminder app.
+  // When it happens, drop the oldest completed items until it fits and say so.
+  function persist(){
+    if(writeItems(items)) return;
+    // Only commit the trim if a smaller list actually fits — otherwise the page
+    // and the disk would disagree about what exists.
+    var done = items.filter(function(i){ return i.status === 'done'; })
+                    .sort(function(a,b){ return (a.doneAt || a.createdAt || 0) - (b.doneAt || b.createdAt || 0); });
+    var trial = items, dropped = 0, ok = false;
+    while(done.length){
+      var batch = done.splice(0, Math.max(1, Math.ceil(done.length / 4)));
+      var ids = {};
+      for(var b=0;b<batch.length;b++) ids[batch[b].id] = 1;
+      trial = trial.filter(function(i){ return !ids[i.id]; });
+      dropped += batch.length;
+      if(writeItems(trial)){ ok = true; break; }
+    }
+    if(ok){
+      items = trial;
+      render();
+      // the caller is about to toast "saved" — let that land first, then say what got trimmed
+      setTimeout(function(){ toast(tf('pruned', { n: dropped })); }, 420);
+    } else {
+      setTimeout(function(){ toast(t('storageFull')); }, 420);
+    }
+  }
   function byId(id){ for(var i=0;i<items.length;i++) if(items[i].id===id) return items[i]; return null; }
 
   /* ============ small utils ============ */
@@ -1162,24 +1256,34 @@
     var timed = pending.filter(function(i){ return !!i.due; }).sort(function(a,b){ return a.due - b.due; });
     var untimed = pending.filter(function(i){ return !i.due; }).sort(function(a,b){ return b.createdAt - a.createdAt; });
     var doneAll = items.filter(function(i){ return i.status === 'done'; });
-    var done = doneAll.sort(function(a,b){ return (b.doneAt||0) - (a.doneAt||0); }).slice(0, 10);
 
     var html = '';
-    if(!pending.length && !done.length){
+    if(!pending.length && !doneAll.length){
       html = '<div class="empty"><div class="ic">' + ICON.bell + '</div>' +
              '<p>' + esc(t('emptyTitle')) + '</p><span>' + esc(t('emptySub')) + '</span></div>';
     } else {
       html += groupHTML(t('groupTimed'), timed.map(itemHTML));
       html += groupHTML(t('groupList'), untimed.map(itemHTML));
-      html += groupHTML(t('groupDone'), done.map(itemHTML), doneAll.length);
+      // Completed jots collapse into one line — the open list stays the same length
+      // no matter how many years of history pile up behind it.
+      if(doneAll.length){
+        html += '<button type="button" class="group-head done-bar" id="openLog">' +
+                esc(t('groupDone')) + ' <span class="n">' + doneAll.length + '</span>' +
+                '<span class="chev">›</span></button>';
+      }
     }
     listEl.innerHTML = html;
 
     var exportBtn = $('#exportAll');
     if(exportBtn){
       exportBtn.hidden = !timed.length;
-      exportBtn.textContent = t('exportAll');
+      var lbl = t('exportAll');
+      exportBtn.title = lbl;
+      exportBtn.setAttribute('aria-label', lbl);
     }
+
+    var ls = document.getElementById('logSheet');
+    if(ls && ls.classList.contains('show')) renderLog();
   }
 
   function updateCountdowns(){
@@ -1189,6 +1293,66 @@
       var it = byId(nodes[i].getAttribute('data-cd'));
       if(it && it.due) nodes[i].textContent = remainLabel(it.due, now);
     }
+  }
+
+  /* ============ done log (archive) ============ */
+  function logDayLabel(d){
+    var base = dayLabel(d, new Date());
+    return d.getFullYear() === new Date().getFullYear() ? base : base + ' ' + d.getFullYear();
+  }
+
+  function renderLog(){
+    var logList = $('#logList'), logCount = $('#logCount'), logClear = $('#logClear');
+    if(!logList) return;
+
+    var done = items.filter(function(i){ return i.status === 'done'; })
+                    .sort(function(a,b){ return (b.doneAt || b.createdAt || 0) - (a.doneAt || a.createdAt || 0); });
+
+    $('#logTitle').textContent = t('groupDone');
+    logCount.textContent = done.length;
+    logClear.hidden = !done.length;
+    logClear.textContent = t('clearDone');
+    $('#logFoot').hidden = !done.length;
+
+    if(!done.length){
+      logList.innerHTML = '<div class="log-empty">' + esc(t('logEmpty')) + '</div>';
+      return;
+    }
+
+    var html = '', last = null;
+    var MAX = 300;                       // keep the sheet snappy on a multi-year archive
+    var shown = done.slice(0, MAX);
+    for(var i=0;i<shown.length;i++){
+      var it = shown[i];
+      var when = new Date(it.doneAt || it.createdAt || Date.now());
+      var key = when.getFullYear() + '-' + when.getMonth() + '-' + when.getDate();
+      if(key !== last){
+        last = key;
+        html += '<div class="log-day">' + esc(logDayLabel(when)) + '</div>';
+      }
+      html += '<div class="log-row" data-id="' + it.id + '">' +
+        '<div class="t">' + esc(it.title) + '</div>' +
+        '<div class="h">' + clockLabel(when) + '</div>' +
+        '<button class="icon danger" data-act="del" aria-label="' + esc(t('actDelete')) + '" title="' + esc(t('actDelete')) + '">' + ICON.trash + '</button>' +
+      '</div>';
+    }
+    logList.innerHTML = html +
+      (done.length > MAX ? '<div class="log-empty">' + esc(tf('logTrimmed', { n: MAX, total: done.length })) + '</div>' : '');
+  }
+
+  function openLog(){ renderLog(); $('#logSheet').classList.add('show'); }
+  function closeLog(){ $('#logSheet').classList.remove('show'); }
+
+  function clearDone(){
+    var gone = items.filter(function(i){ return i.status === 'done'; });
+    if(!gone.length) return;
+    items = items.filter(function(i){ return i.status !== 'done'; });
+    persist(); render();
+    toast(tf('clearedN', { n: gone.length }), t('undo'), function(){
+      items = items.concat(gone);
+      persist(); render();
+      toast(t('restored'));
+    });
   }
 
   /* ============ toast ============ */
@@ -1400,12 +1564,30 @@
   });
 
   $('#exportAll').addEventListener('click', exportAll);
+
+  // the "Done · 128 ›" line opens the archive instead of dumping 128 rows into the list
+  listEl.addEventListener('click', function(e){
+    if(e.target.closest('#openLog')) openLog();
+  });
+
+  $('#logList').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-act="del"]');
+    if(!btn) return;
+    var row = btn.closest('[data-id]');
+    if(row) removeItem(row.getAttribute('data-id'));
+  });
+  $('#logClear').addEventListener('click', clearDone);
+  $('#logSheet').addEventListener('click', function(e){
+    if(e.target.getAttribute('data-close')) closeLog();
+  });
+
   $('#ackBtn').addEventListener('click', ack);
   $('#snoozeBtn').addEventListener('click', snooze);
 
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape'){
       if(ringingId) ack();
+      else if($('#logSheet').classList.contains('show')) closeLog();
       else if(sheet.classList.contains('show')) closeSheet();
     }
   });

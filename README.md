@@ -27,6 +27,8 @@ open index.html          # that's the install
 - **Repeats.** Daily / weekly / monthly, rolling forward automatically after each acknowledgement.
 - **Never loses an item.** Missed reminders fire the next time you open the app, one queue at a time.
 - **Add to Calendar.** Exports a `.ics` with an alarm, so the reminder still fires when Jot is closed.
+- **Done stays out of the way.** Completed items collapse into a single `Done · 128 ›` line and open a
+  day-grouped archive where you can delete one by one or clear the lot (undo included).
 - **Two languages, English by default.** Toggle top-right; the choice is remembered.
 - **Installable.** Works offline as a PWA, and ships with a tiny native macOS wrapper.
 
@@ -57,7 +59,26 @@ that must survive a closed window, every timed row has a calendar button:
 
 It writes an `.ics` with a `VALARM` at the due time (plus `RRULE` for repeats). Import it once and
 **Calendar / Outlook does the ringing**, on any device, whether Jot is running or not.
-`Add all reminders to Calendar` in the footer does the whole list at once.
+The calendar button in the header (`Add all reminders to Calendar`) exports the whole list at once.
+
+## Done: collapsed, archived, clearable
+
+Ticking a reminder off moves it to `Done`. That row never grows: the list shows one line —
+`Done 128 ›` — no matter how much history piles up, so the main screen stays the same length forever.
+
+![Done archive](docs/screenshot-log.png)
+
+Tapping it opens the archive, grouped by day (`Today`, `Yesterday`, `Oct 30`, …). From there:
+
+- **delete** a single entry with its trash button (undoable);
+- **Clear all completed** wipes the archive in one go, with a 5-second undo in the toast.
+
+There is no automatic expiry: nothing is deleted without you asking. The one exception is honest and
+loud — if `localStorage` runs out of quota (~5 MB, several thousand items), Jot trims the oldest
+completed entries until the newest item fits, and tells you how many it dropped. Previously the write
+just failed silently, which meant the newest jot never reached disk.
+
+Above 300 archived items the sheet renders the most recent 300 and says so.
 
 ## Platforms
 
@@ -108,6 +129,8 @@ markers — which is exactly what the test file extracts), and a date-format bra
 - **The alarm only rings while the app is open.** The calendar export is the honest workaround;
   a background daemon or a native notification layer is not implemented.
 - Data lives in `localStorage` on one device only. Export/import is on the roadmap.
+- Completed items are never deleted automatically; if the storage quota is reached, the oldest ones
+  are trimmed (with a notice) so the newest change still survives.
 - System notifications are best-effort: browsers require permission, and the macOS shell has none
   (the full-screen alarm replaces them there).
 - Time parsing is deliberately shallow. If it can't find a time, the item goes to the list
