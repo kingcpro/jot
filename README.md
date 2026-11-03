@@ -140,7 +140,7 @@ markers — which is exactly what the test file extracts), and a date-format bra
 
 - [ ] JSON import/export
 - [ ] Notification triggers (Service Worker `showTrigger`, Chromium only) for closed-tab alarms
-- [ ] Reminders.app / EventKit integration in the macOS shell (no `.ics` round-trip)
+- [ ] EventKit in the macOS shell — optional polish, the `.ics` path is two clicks today
 - [ ] More languages (the i18n shape is ready)
 - [ ] Tauri build for Windows/Linux
 

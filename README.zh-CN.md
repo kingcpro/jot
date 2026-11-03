@@ -120,7 +120,7 @@ node test/parser.test.js    # 解析器用例（英文 + 中文 + 混输）
 
 - [ ] JSON 导入 / 导出
 - [ ] Service Worker `showTrigger` 定时通知（仅 Chromium）让关页也能响
-- [ ] macOS 外壳接 EventKit，直接写系统「提醒事项」，省掉 `.ics` 中转
+- [ ] macOS 外壳接 EventKit（可选打磨，现在 .ics 是两次点击）
 - [ ] 更多语言
 - [ ] Tauri 打包 Windows / Linux 版本
 
