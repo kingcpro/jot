@@ -65,6 +65,8 @@ The calendar button in the header (`Add all reminders to Calendar`) exports the 
 
 Ticking a reminder off moves it to `Done`. That row never grows: the list shows one line —
 `Done 128 ›` — no matter how much history piles up, so the main screen stays the same length forever.
+The whole band is the button, not the word: 44 px tall (Apple's minimum touch target), edge to edge,
+tinting on hover with the chevron turning coral — nothing to aim at.
 
 ![Done archive](docs/screenshot-log.png)
 
