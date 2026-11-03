@@ -4,9 +4,28 @@
 `Cmd+C/V` works, and the alarm chime is allowed to autoplay. Build it with:
 
 ```bash
-./mac/build.sh
+./mac/build.sh            # universal: arm64 + x86_64, macOS 13+
+JOT_ARCH=native ./mac/build.sh   # just this machine's arch, ~2x faster
 open dist/Jot.app
 ```
+
+The build cross-compiles both slices with `swiftc -target` and `lipo`s them together, so the
+released `Jot.zip` runs on Apple Silicon and Intel. If cross-compiling fails it falls back to the
+native arch and says so.
+
+## Shipping it (what the GitHub release does)
+
+```bash
+./mac/build.sh
+ditto -c -k --sequesterRsrc --keepParent dist/Jot.app dist/Jot.zip
+gh release create v1.0.0 dist/Jot.zip --notes-file /tmp/notes.md
+```
+
+`ditto` rather than `zip`: it keeps the bundle's metadata intact, so the extracted `Jot.app`
+stays a real app instead of a folder of files. The binary is **ad-hoc signed only** (`codesign -s -`),
+which is enough for Gatekeeper to let *you* run it, but a downloaded copy is quarantined and
+blocked on first launch — hence the right-click → Open instructions in the README. Fixing that
+properly needs a Developer ID certificate plus notarization.
 
 ## Why a WKWebView shell
 
