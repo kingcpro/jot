@@ -1,0 +1,15 @@
+# build output
+dist/
+*.iconset
+*.xcuserstate
+
+# macOS
+.DS_Store
+._*
+
+# editors
+.vscode/
+.idea/
+
+# node (only needed if you add dev tooling)
+node_modules/

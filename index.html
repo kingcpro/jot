@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f0">
+<title>Jot · one line in, it rings on time</title>
+<meta name="description" content="Jot — type one line, it rings on time. A single-file reminder app: no account, no server, no build step.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root{
+    --bg:#f6f4f0;
+    --card:#ffffff;
+    --ink:#1c1917;
+    --ink-2:#57514b;
+    --muted:#948c83;
+    --line:#e9e4dc;
+    --accent:#e2563c;
+    --accent-2:#c9432b;
+    --accent-soft:#fdeee9;
+    --ok:#3d8b6a;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(28,25,23,.04), 0 10px 28px -16px rgba(28,25,23,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(880px 480px at 50% -12%, #fff1e8 0%, rgba(255,241,232,0) 72%);
+  }
+  .wrap{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 18px 72px}
+
+  /* ---------- 顶部 ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;padding:24px 0 16px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{
+    width:44px;height:44px;border-radius:14px;flex:none;
+    background:linear-gradient(160deg,#ea6a4c,#c9432b);color:#fff;
+    display:grid;place-items:center;font-size:21px;font-weight:700;
+    box-shadow:0 8px 20px -10px rgba(201,67,43,.95);
+  }
+  h1{font-size:19px;margin:0;letter-spacing:.6px}
+  .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .ghost{
+    border:1px solid var(--line);background:#fff;border-radius:12px;
+    width:40px;height:40px;display:grid;place-items:center;cursor:pointer;
+    color:var(--ink-2);transition:.15s;
+  }
+  .ghost:hover{border-color:#d9d2c8;background:#faf8f5}
+  .ghost.off{color:#c3bab0}
+  .ghost.off .wave{display:none}
+
+  /* ---------- 输入 ---------- */
+  .composer{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;box-shadow:var(--shadow);margin-bottom:8px;
+  }
+  .input-row{display:flex;gap:10px}
+  #input{
+    flex:1;min-width:0;border:0;background:#f7f5f2;border-radius:13px;
+    padding:14px;font-size:16px;color:var(--ink);outline:none;font-family:inherit;
+    transition:.15s;
+  }
+  #input::placeholder{color:#b6ada3}
+  #input:focus{background:#f4f1ec;box-shadow:inset 0 0 0 1.5px rgba(226,86,60,.4)}
+  .primary{
+    border:0;border-radius:13px;background:var(--accent);color:#fff;
+    font-size:15px;font-weight:600;padding:0 20px;cursor:pointer;font-family:inherit;
+    flex:none;transition:.15s;
+  }
+  .primary:active{background:var(--accent-2);transform:translateY(1px)}
+  .mic{
+    flex:none;width:46px;border:0;border-radius:13px;background:#f7f5f2;color:var(--ink-2);
+    display:grid;place-items:center;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .mic[hidden]{display:none}
+  .mic:hover{background:#f0ece6;color:var(--ink)}
+  .mic.rec{background:var(--accent-soft);color:var(--accent);animation:recpulse 1.2s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(226,86,60,.38)}50%{box-shadow:0 0 0 9px rgba(226,86,60,0)}}
+  .preview{
+    margin:11px 4px 1px;font-size:13px;color:var(--ink-2);
+    min-height:21px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  }
+  .preview .k{color:var(--accent);font-weight:600}
+  .preview .dim{color:var(--muted)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{
+    border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;
+    padding:7px 13px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .chip:hover{border-color:#dbd3c9;background:#faf8f5}
+  .chip:active{transform:scale(.97)}
+
+  /* ---------- 列表 ---------- */
+  .group-head{display:flex;align-items:center;gap:10px;margin:26px 4px 11px;font-size:12.5px;color:var(--muted);letter-spacing:.5px}
+  .group-head .n{color:#b6ada3}
+  .group-head::after{content:'';flex:1;height:1px;background:var(--line)}
+  .item{
+    display:flex;align-items:center;gap:12px;background:var(--card);
+    border:1px solid var(--line);border-radius:16px;padding:14px 10px 14px 16px;
+    margin-bottom:10px;transition:box-shadow .16s,border-color .16s;
+    animation:pop .22s ease both;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .item:hover{box-shadow:var(--shadow)}
+  .item-main{flex:1;min-width:0}
+  .item-title{font-size:16px;font-weight:500;letter-spacing:.2px;word-break:break-word}
+  .item-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;font-size:12.5px;color:var(--muted)}
+  .item-meta b{font-weight:600;color:var(--ink-2)}
+  .item-meta i{font-style:normal;color:#cfc7bd}
+  .tag{
+    background:var(--accent-soft);color:var(--accent-2);border-radius:6px;
+    padding:1px 6px;font-size:11.5px;font-weight:600;letter-spacing:.2px;
+  }
+  .item.overdue{border-color:#f2c9bd;background:#fffaf8}
+  .item.overdue .item-meta b,.item.overdue [data-cd]{color:var(--accent-2)}
+  .item.done{opacity:.62}
+  .item.done .item-title{text-decoration:line-through;color:var(--muted)}
+  .item-actions{display:flex;gap:2px;flex:none}
+  .icon{
+    border:0;background:transparent;color:#b9b0a6;width:34px;height:34px;border-radius:10px;
+    display:grid;place-items:center;cursor:pointer;transition:.14s;
+  }
+  .icon:hover{background:#f4f1ec;color:var(--ink-2)}
+  .icon.danger:hover{background:#fdeee9;color:var(--accent)}
+  .icon svg{width:17px;height:17px}
+
+  .empty{text-align:center;padding:54px 20px 40px;color:var(--muted)}
+  .empty .ic{color:#ded6cb;margin-bottom:14px}
+  .empty p{margin:0;font-size:15px;color:var(--ink-2);font-weight:500}
+  .empty span{display:block;margin-top:6px;font-size:13px}
+  .foot{margin-top:34px;text-align:center;font-size:12px;color:#b6ada3;line-height:1.8}
+
+  /* ---------- 闹铃 ---------- */
+  .alarm{
+    position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:28px;
+    background:radial-gradient(130% 90% at 50% -10%, #3d2b24 0%, #191310 62%, #120e0c 100%);
+  }
+  .alarm.show{display:grid;animation:fade .22s ease both}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .alarm-inner{text-align:center;color:#fff;max-width:420px;width:100%}
+  .ring{width:88px;height:88px;margin:0 auto 26px;border-radius:50%;display:grid;place-items:center;
+    background:rgba(226,86,60,.16);color:#ff8566;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(226,86,60,.42)}50%{transform:scale(1.06);box-shadow:0 0 0 22px rgba(226,86,60,0)}}
+  .alarm-kicker{font-size:12px;letter-spacing:3px;color:rgba(255,255,255,.42);text-transform:uppercase;margin-bottom:10px}
+  .alarm-title{font-size:30px;line-height:1.32;font-weight:600;margin:0 0 12px;word-break:break-word}
+  .alarm-meta{font-size:13.5px;color:rgba(255,255,255,.52);margin-bottom:38px}
+  .alarm-actions{display:flex;flex-direction:column;gap:12px}
+  .btn-main{
+    border:0;border-radius:15px;padding:17px;font-size:16.5px;font-weight:600;
+    background:#fff;color:#1c1917;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .btn-main:active{transform:scale(.985)}
+  .btn-sub{
+    border:1px solid rgba(255,255,255,.2);border-radius:15px;padding:15px;font-size:15px;
+    background:transparent;color:rgba(255,255,255,.82);cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .btn-sub:hover{background:rgba(255,255,255,.07)}
+  .queue{margin-top:18px;font-size:12.5px;color:rgba(255,255,255,.35)}
+
+  /* ---------- 选时间面板 ---------- */
+  .sheet{position:fixed;inset:0;z-index:70;display:none}
+  .sheet.show{display:block}
+  .sheet-mask{position:absolute;inset:0;background:rgba(24,20,18,.44);animation:fade .2s ease both}
+  .sheet-panel{
+    position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:600px;
+    background:#fff;border-radius:22px 22px 0 0;padding:8px 20px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:0 -12px 40px -18px rgba(28,25,23,.5);animation:slideup .26s cubic-bezier(.2,.9,.3,1) both;
+  }
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .grip{width:38px;height:4px;border-radius:2px;background:#e3ddd4;margin:6px auto 14px}
+  .sheet-panel h3{margin:0 0 16px;font-size:16.5px;font-weight:600;letter-spacing:.3px}
+  .field{display:block;margin-bottom:14px}
+  .field > span{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.4px}
+  .field input{
+    width:100%;border:1px solid var(--line);background:#faf8f5;border-radius:12px;
+    padding:12px 13px;font-size:15.5px;color:var(--ink);outline:none;font-family:inherit;
+  }
+  .field input:focus{border-color:rgba(226,86,60,.5);background:#fff}
+  .dual{display:flex;gap:10px}
+  .dual .field{flex:1;min-width:0}
+  .preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .preset-row button{
+    border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;
+    font-size:13px;color:var(--ink-2);cursor:pointer;font-family:inherit;transition:.14s;
+  }
+  .preset-row button:hover{border-color:#dbd3c9;background:#faf8f5}
+  .seg{display:flex;gap:6px;background:#f4f1ec;border-radius:13px;padding:4px;margin-bottom:18px}
+  .seg button{
+    flex:1;border:0;background:transparent;border-radius:10px;padding:9px 4px;font-size:13.5px;
+    color:var(--ink-2);cursor:pointer;font-family:inherit;transition:.16s;
+  }
+  .seg button.on{background:#fff;color:var(--accent-2);font-weight:600;box-shadow:0 1px 3px rgba(28,25,23,.1)}
+  .block{width:100%;padding:15px;border-radius:14px;font-size:16px}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);z-index:90;
+    background:#241f1b;color:#fff;padding:11px 17px;border-radius:13px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.24s;max-width:86vw;
+    box-shadow:0 12px 30px -12px rgba(0,0,0,.5);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .toast b{color:#ffb59f;cursor:pointer;margin-left:8px}
+
+  @media (max-width:420px){
+    .alarm-title{font-size:26px}
+    h1{font-size:18px}
+  }
+  /* ---------- added for i18n / calendar / PWA ---------- */
+  .top-actions{display:flex;gap:8px;align-items:center}
+  .ghost.lang{width:auto;min-width:40px;padding:0 11px;font-size:12.5px;font-weight:600;letter-spacing:.4px;font-family:inherit}
+  .foot span{display:block}
+  .linkbtn{
+    margin-top:11px;border:0;background:transparent;color:var(--accent-2);
+    font-size:12.5px;font-family:inherit;cursor:pointer;text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .linkbtn:hover{color:var(--accent)}
+  .linkbtn[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">记</div>
+      <div>
+        <h1 data-i18n="brand">Jot</h1>
+        <p class="sub" data-i18n="tagline">One line in. It rings on time.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="ghost lang" id="langBtn" aria-label="Switch language">中</button>
+      <button class="ghost" id="soundBtn" aria-label="Sound">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">
+          <path d="M11 5 6 9H3v6h3l5 4V5z"/>
+          <path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7"/>
+          <path class="wave" d="M18.5 5.5a9 9 0 0 1 0 13"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <form class="composer" id="form" autocomplete="off">
+    <div class="input-row">
+      <input id="input" data-i18n-ph="inputPlaceholder" placeholder="pay rent tomorrow 9am">
+      <button type="button" class="mic" id="micBtn" data-i18n-title="micTitle" title="Voice input" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19">
+          <path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z"/>
+          <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/>
+          <path d="M12 18v2.5"/>
+        </svg>
+      </button>
+      <button type="submit" class="primary" data-i18n="add">Jot</button>
+    </div>
+    <div class="preview" id="preview"></div>
+    <div class="chips" id="chips"></div>
+  </form>
+
+  <main id="list"></main>
+
+  <footer class="foot">
+    <span data-i18n="foot1"></span>
+    <span data-i18n="foot2"></span>
+    <button type="button" class="linkbtn" id="exportAll" hidden></button>
+  </footer>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-mask" data-close="1"></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" data-i18n-aria="sheetAria" aria-label="Pick a time">
+    <div class="grip"></div>
+    <h3 data-i18n="sheetTitle">Pick a time</h3>
+    <label class="field">
+      <span data-i18n="sheetWhat">What</span>
+      <input id="sheetTitle" data-i18n-ph="sheetWhatPh" placeholder="pay the electricity bill">
+    </label>
+    <div class="preset-row" id="presetRow">
+      <button type="button" data-preset="in-30m" data-i18n="preset30">in 30 min</button>
+      <button type="button" data-preset="in-1h" data-i18n="preset1h">in 1 hour</button>
+      <button type="button" data-preset="today-20" data-i18n="presetTonight">tonight 8pm</button>
+      <button type="button" data-preset="tomorrow-9" data-i18n="presetTomorrow">tomorrow 9am</button>
+    </div>
+    <div class="dual">
+      <label class="field">
+        <span data-i18n="fieldDate">Date</span>
+        <input type="date" id="sheetDate">
+      </label>
+      <label class="field">
+        <span data-i18n="fieldTime">Time</span>
+        <input type="time" id="sheetTime">
+      </label>
+    </div>
+    <div class="seg" id="repeatSeg">
+      <button type="button" data-repeat="none" class="on" data-i18n="repNone">Once</button>
+      <button type="button" data-repeat="daily" data-i18n="repDaily">Daily</button>
+      <button type="button" data-repeat="weekly" data-i18n="repWeekly">Weekly</button>
+      <button type="button" data-repeat="monthly" data-i18n="repMonthly">Monthly</button>
+    </div>
+    <button type="button" class="primary block" id="sheetSave" data-i18n="save">Save reminder</button>
+  </div>
+</div>
+
+<div class="alarm" id="alarm" role="dialog" aria-modal="true">
+  <div class="alarm-inner">
+    <div class="ring">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="40" height="40">
+        <path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/>
+        <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+      </svg>
+    </div>
+    <div class="alarm-kicker" id="alarmKicker">Time's up</div>
+    <h2 class="alarm-title" id="alarmTitle"></h2>
+    <div class="alarm-meta" id="alarmMeta"></div>
+    <div class="alarm-actions">
+      <button class="btn-main" id="ackBtn" data-i18n="ack">Got it</button>
+      <button class="btn-sub" id="snoozeBtn" data-i18n="snooze">Snooze 10 min</button>
+    </div>
+    <div class="queue" id="queue"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============================================================
+     i18n — English is the default, Chinese is one tap away.
+     Every user-facing string lives here; add a language by adding
+     a block with the same keys.
+     ============================================================ */
+  var I18N = {
+    en: {
+      locale: 'en-US',
+      htmlLang: 'en',
+      appTitle: 'Jot · one line in, it rings on time',
+      brand: 'Jot',
+      tagline: 'One line in. It rings on time.',
+      soundOn: 'Sound: on',
+      soundOff: 'Sound: off',
+      inputPlaceholder: 'pay rent tomorrow 9am',
+      inputAria: 'Quick note',
+      add: 'Jot',
+      micTitle: 'Voice input',
+      hint: 'Try “pay rent tomorrow 9am”, “water in 30 min”, “standup every Monday 10am”',
+      willRing: 'Rings',
+      noTime: 'No time found — goes to the list, no alarm',
+      groupTimed: 'Reminders',
+      groupList: 'List',
+      groupDone: 'Done',
+      emptyTitle: 'Nothing jotted yet',
+      emptySub: 'Try “pay rent tomorrow 9am”',
+      untimed: 'List · no alarm',
+      doneSuffix: 'done',
+      actDone: 'Done',
+      actDelete: 'Delete',
+      actCal: 'Add to Calendar',
+      foot1: 'Everything stays on this device — no account, no server.',
+      foot2: 'The alarm rings only while Jot is open. Add a reminder to your calendar when it has to fire with the app closed.',
+      exportAll: 'Add all reminders to Calendar',
+      sheetAria: 'Pick a time',
+      sheetTitle: 'Pick a time',
+      sheetWhat: 'What',
+      sheetWhatPh: 'pay the electricity bill',
+      preset30: 'in 30 min',
+      preset1h: 'in 1 hour',
+      presetTonight: 'tonight 8pm',
+      presetTomorrow: 'tomorrow 9am',
+      fieldDate: 'Date',
+      fieldTime: 'Time',
+      repNone: 'Once',
+      repDaily: 'Daily',
+      repWeekly: 'Weekly',
+      repMonthly: 'Monthly',
+      save: 'Save reminder',
+      kicker: 'Time’s up',
+      kickerMissed: 'Missed',
+      ack: 'Got it',
+      snooze: 'Snooze 10 min',
+      queueOne: '1 more reminder waiting',
+      queueMany: '{n} more reminders waiting',
+      wasDue: 'was due',
+      toDeleted: 'Deleted “{t}”',
+      undo: 'Undo',
+      restored: 'Restored',
+      added: 'Saved · rings {w}',
+      addedList: 'Added to the list — give it a time whenever you like',
+      demoToast: 'Ringing in 3 seconds — try switching to another app',
+      soundOnToast: 'Sound on',
+      soundOffToast: 'Sound off — the alarm will be silent',
+      nextAt: 'Next {w}',
+      completed: 'Done',
+      snoozed: 'Snoozed for 10 minutes',
+      needTitle: 'Write down what to remember first',
+      needDateTime: 'Pick a date and time',
+      pastTime: 'That time has passed — pick another',
+      calSent: 'Opening Calendar — confirm the import there',
+      calEmpty: 'No timed reminders to export',
+      micDenied: 'Microphone permission denied — allow it in browser settings',
+      micNetwork: 'Speech service unreachable — try your keyboard’s dictation key',
+      micAgain: 'Didn’t catch that, try again',
+      micSpeak: 'Speak now — it becomes text automatically',
+      micFail: 'Could not start voice input',
+      notifBody: 'Jot · time’s up',
+      chips: [
+        { act:'pick', text:'Pick a time…' },
+        { append:'in 30 min', text:'in 30 min' },
+        { append:'tomorrow 9am', text:'tomorrow 9am' },
+        { append:'every day 8am', text:'daily 8am' },
+        { act:'demo', text:'Ring in 3s' }
+      ]
+    },
+    zh: {
+      locale: 'zh-CN',
+      htmlLang: 'zh-CN',
+      appTitle: 'Jot 记一下 · 一句话记，到点就响',
+      brand: '记一下',
+      tagline: '一句话记下来，到点它自己响',
+      soundOn: '声音：开',
+      soundOff: '声音：关',
+      inputPlaceholder: '明天 9 点 交电费',
+      inputAria: '快速记录',
+      add: '记下',
+      micTitle: '语音输入',
+      hint: '试试「明天 9 点 交房租」「30 分钟后 喝水」「每周一 10 点 例会」',
+      willRing: '将会',
+      noTime: '没有识别到时间，会存进「清单」不提醒',
+      groupTimed: '提醒我',
+      groupList: '清单',
+      groupDone: '已完成',
+      emptyTitle: '还没有要记的事',
+      emptySub: '试试输入「明天 9 点 交房租」',
+      untimed: '清单 · 不提醒',
+      doneSuffix: '完成',
+      actDone: '完成',
+      actDelete: '删除',
+      actCal: '加入日历',
+      foot1: '数据只存在这台设备上，没有账号，没有服务器。',
+      foot2: '闹铃需要 Jot 开着才会响；要关掉也响，把提醒加进日历即可。',
+      exportAll: '把提醒全部加进日历',
+      sheetAria: '选时间',
+      sheetTitle: '选个时间',
+      sheetWhat: '做什么',
+      sheetWhatPh: '交电费',
+      preset30: '30 分钟后',
+      preset1h: '1 小时后',
+      presetTonight: '今晚 8 点',
+      presetTomorrow: '明早 9 点',
+      fieldDate: '日期',
+      fieldTime: '时间',
+      repNone: '不重复',
+      repDaily: '每天',
+      repWeekly: '每周',
+      repMonthly: '每月',
+      save: '保存提醒',
+      kicker: '到点了',
+      kickerMissed: '刚刚错过',
+      ack: '知道了',
+      snooze: '10 分钟后再响',
+      queueOne: '还有 1 条提醒在排队',
+      queueMany: '还有 {n} 条提醒在排队',
+      wasDue: '原定',
+      toDeleted: '已删除「{t}」',
+      undo: '撤销',
+      restored: '已恢复',
+      added: '已记下 · {w} 提醒',
+      addedList: '已放进清单，随时可以加时间',
+      demoToast: '3 秒后就会响，可以试试切到别的应用',
+      soundOnToast: '声音已开启',
+      soundOffToast: '声音已关闭，只弹窗',
+      nextAt: '下次 {w}',
+      completed: '已完成',
+      snoozed: '10 分钟后再响',
+      needTitle: '先写一句要做什么',
+      needDateTime: '选一下日期和时间',
+      pastTime: '这个时间已经过了，换个时间吧',
+      calSent: '已交给日历，在那边确认导入即可',
+      calEmpty: '没有带时间的提醒可以导出',
+      micDenied: '没有麦克风权限，请在浏览器设置里允许',
+      micNetwork: '语音服务连不上，可以直接用输入法上的语音键',
+      micAgain: '没听清，再说一次',
+      micSpeak: '说吧，说完自动变成文字',
+      micFail: '语音启动失败，试试输入法的语音键',
+      notifBody: 'Jot 记一下 · 到点了',
+      chips: [
+        { act:'pick', text:'选时间…' },
+        { append:'30 分钟后', text:'30 分钟后' },
+        { append:'明天 9 点', text:'明天 9 点' },
+        { append:'每天 8 点', text:'每天 8 点' },
+        { act:'demo', text:'试听 3 秒后' }
+      ]
+    }
+  };
+
+  var KEY_ITEMS = 'jot.items.v1';
+  var KEY_SET   = 'jot.settings.v1';
+  var WEEK_CN   = '日一二三四五六';
+  var EN_WD     = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var ICS_WD    = ['SU','MO','TU','WE','TH','FR','SA'];
+
+  var items = [];
+  var settings = { sound:true, lang:'en' };   // English by default, per project decision
+  var ringingId = null;
+
+  var $ = function(s,r){ return (r||document).querySelector(s); };
+  var inputEl = $('#input'), previewEl = $('#preview'), listEl = $('#list');
+  var chipsEl = $('#chips'), alarmEl = $('#alarm'), toastEl = $('#toast');
+
+  var ICON = {
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.8A.8.8 0 0 1 9.8 4h4.4a.8.8 0 0 1 .8.8V7M6.5 7l.9 12.2a1 1 0 0 0 1 .8h7.2a1 1 0 0 0 1-.8L17.5 7"/></svg>',
+    cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.3" y="5" width="17.4" height="15.6" rx="3.2"/><path d="M8 3.2v3.4M16 3.2v3.4M3.3 10.2h17.4M12 13.4v4M10 15.4h4"/></svg>',
+    bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="42" height="42"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>'
+  };
+
+  /* ============ language helpers ============ */
+  function t(k){
+    var pack = I18N[settings.lang] || I18N.en;
+    return pack[k] !== undefined ? pack[k] : (I18N.en[k] !== undefined ? I18N.en[k] : k);
+  }
+  function tf(k, map){
+    var s = t(k);
+    for(var key in map){ s = s.split('{' + key + '}').join(map[key]); }
+    return s;
+  }
+  function isZh(){ return settings.lang === 'zh'; }
+  function locale(){ return (I18N[settings.lang] || I18N.en).locale; }
+
+  /* ============ storage ============ */
+  function load(){
+    try{ items = JSON.parse(localStorage.getItem(KEY_ITEMS)) || []; }catch(e){ items = []; }
+    try{
+      var s = JSON.parse(localStorage.getItem(KEY_SET));
+      if(s && typeof s === 'object'){ settings = Object.assign(settings, s); }
+    }catch(e){}
+    if(settings.lang !== 'zh') settings.lang = 'en';
+  }
+  function persist(){ try{ localStorage.setItem(KEY_ITEMS, JSON.stringify(items)); }catch(e){} }
+  function persistSet(){ try{ localStorage.setItem(KEY_SET, JSON.stringify(settings)); }catch(e){} }
+  function byId(id){ for(var i=0;i<items.length;i++) if(items[i].id===id) return items[i]; return null; }
+
+  /* ============ small utils ============ */
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+  function ordinal(n){
+    var s = ['th','st','nd','rd'], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+
+  /* ============ date / time formatting ============ */
+  function fmtDate(d){ return new Intl.DateTimeFormat(locale(), { month:'short', day:'numeric' }).format(d); }
+  function fmtWeekday(d){ return new Intl.DateTimeFormat(locale(), { weekday:'short' }).format(d); }
+
+  function dayLabel(d, now){
+    var diff = Math.round((startOfDay(d) - startOfDay(now)) / 86400000);
+    if(isZh()){
+      if(diff === 0) return '今天';
+      if(diff === 1) return '明天';
+      if(diff === 2) return '后天';
+      if(diff === -1) return '昨天';
+      if(diff < 0) return (d.getMonth()+1)+'月'+d.getDate()+'日';
+      if(diff < 7) return '周'+WEEK_CN[d.getDay()];
+      return (d.getMonth()+1)+'月'+d.getDate()+'日';
+    }
+    if(diff === 0) return 'Today';
+    if(diff === 1) return 'Tomorrow';
+    if(diff === 2) return 'In 2 days';
+    if(diff === -1) return 'Yesterday';
+    if(diff < 0) return fmtDate(d);
+    if(diff < 7) return fmtWeekday(d);
+    return fmtDate(d);
+  }
+  function clockLabel(d){
+    return new Intl.DateTimeFormat(locale(), isZh()
+      ? { hour:'2-digit', minute:'2-digit' }
+      : { hour:'numeric', minute:'2-digit' }
+    ).format(d);
+  }
+  function dueLabel(ts, now){ var d = new Date(ts); return dayLabel(d, now) + ' ' + clockLabel(d); }
+
+  function remainLabel(ts, now){
+    var ms = ts - now, past = ms < 0, abs = Math.abs(ms), txt;
+    if(abs < 60000){
+      var sec = Math.max(1, Math.round(abs/1000));
+      txt = isZh() ? sec + ' 秒' : sec + 's';
+    } else if(abs < 3600000){
+      txt = isZh() ? Math.floor(abs/60000) + ' 分钟' : Math.floor(abs/60000) + ' min';
+    } else if(abs < 86400000){
+      var h = Math.floor(abs/3600000), m = Math.floor((abs%3600000)/60000);
+      txt = isZh() ? h + ' 小时' + (m ? ' ' + m + ' 分' : '') : h + 'h' + (m ? ' ' + m + 'm' : '');
+    } else {
+      var dd = Math.floor(abs/86400000), hh = Math.floor((abs%86400000)/3600000);
+      txt = isZh() ? dd + ' 天' + (hh ? ' ' + hh + ' 小时' : '') : dd + 'd' + (hh ? ' ' + hh + 'h' : '');
+    }
+    if(isZh()) return past ? '已过 ' + txt : '还有 ' + txt;
+    return past ? txt + ' ago' : 'in ' + txt;
+  }
+
+  function repeatTag(it){
+    if(!it.repeat || it.repeat === 'none') return '';
+    if(it.repeat === 'daily') return t('repDaily');
+    if(it.repeat === 'weekly'){
+      var wd = (it.repeatWeekday === null || it.repeatWeekday === undefined) ? 0 : it.repeatWeekday;
+      return isZh() ? '每周' + WEEK_CN[wd] : 'Every ' + EN_WD[wd];
+    }
+    if(it.repeat === 'monthly'){
+      var d = it.repeatMonthDay || 1;
+      return isZh() ? '每月' + d + ' 号' : 'Monthly on the ' + ordinal(d);
+    }
+    return '';
+  }
+
+  /* ============ Chinese natural-language parser ============ */
+  /* #region parser — extracted by test/parser.test.js, keep the markers */
+  var CN_NUM = {'零':0,'一':1,'两':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+  function toNum(str){
+    if(str === null || str === undefined) return null;
+    str = String(str);
+    if(/^\d+$/.test(str)) return parseInt(str,10);
+    if(str === '十') return 10;
+    if(/^十[一二三四五六七八九]$/.test(str)) return 10 + CN_NUM[str[1]];
+    if(/^[一二三四五六七八九]十$/.test(str)) return CN_NUM[str[0]]*10;
+    if(/^[一二三四五六七八九]十[一二三四五六七八九]$/.test(str)) return CN_NUM[str[0]]*10 + CN_NUM[str[2]];
+    if(str.length===1 && CN_NUM[str]!==undefined) return CN_NUM[str];
+    return null;
+  }
+  function wdIndex(ch){
+    if(ch === '日' || ch === '天' || ch === '0' || ch === '7') return 0;
+    if(ch === '末') return 6;
+    var map = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6};
+    if(map[ch]) return map[ch];
+    var n = parseInt(ch,10);
+    return (n>=0 && n<=6) ? n : 0;
+  }
+
+  function parseZh(raw, now){
+    var src = String(raw).trim();
+    var s = ' ' + src + ' ';
+
+    var repeat = 'none', repeatWeekday = null, repeatMonthDay = null;
+    var dayShift = null, absDate = null, weekdayDate = null;
+    var hh = null, mm = 0, hasTime = false;
+    var durMs = null, defH = 9, dayMer = '';
+
+    function take(re){
+      var m = s.match(re);
+      if(m){ s = s.replace(m[0], ' '); return m; }
+      return null;
+    }
+    var m;
+
+    // 1) repeat rules
+    if(take(/\s*(每天|每日|天天)\s*/)){
+      repeat = 'daily';
+    } else if(m = take(/\s*每(?:个)?(?:周|星期|礼拜)\s*([一二三四五六日天末])/)){
+      repeat = 'weekly'; repeatWeekday = wdIndex(m[1]);
+    } else if(m = take(/\s*每(?:个)?(?:周|星期|礼拜)\s*([1-7])(?![0-9点:：时])/)){
+      repeat = 'weekly'; repeatWeekday = wdIndex(m[1]);
+    } else if(take(/\s*每(?:个)?(?:周|星期|礼拜)\s*/)){
+      repeat = 'weekly'; repeatWeekday = now.getDay();
+    } else if(m = take(/\s*每月\s*(\d{1,2}|[一二三四五六七八九十]{1,3})\s*[号日]?/)){
+      repeat = 'monthly'; repeatMonthDay = toNum(m[1]) || 1;
+    }
+
+    // 2) relative duration: 30 分钟后 / 2 小时后 / 3 天后
+    if(m = take(/(\d{1,3}|[一二三四五六七八九十]{1,3})\s*(?:秒钟|秒|分钟|分|个小时|小时|钟头|天|日|周|个星期|星期|月)\s*(?:后|之后|以后)/)){
+      var n = toNum(m[1]) || 0;
+      var u = m[0];
+      var mult = /秒/.test(u) ? 1000
+               : /分/.test(u) ? 60000
+               : /(小时|钟头)/.test(u) ? 3600000
+               : /(周|星期)/.test(u) ? 604800000
+               : /月/.test(u) ? 2592000000
+               : 86400000;
+      durMs = n * mult;
+    }
+
+    // 3) day words
+    if(m = take(/\s*(大后天|后天|明天|明日|明早|明晚|今天|今日|今晚|今早|待会|一会儿|稍后)\s*/)){
+      var w = m[1];
+      if(/大后天/.test(w)) dayShift = 3;
+      else if(/后天/.test(w)) dayShift = 2;
+      else if(/明/.test(w)) dayShift = 1;
+      else dayShift = 0;
+      if(/明早|今早/.test(w)){ defH = 8; dayMer = 'am'; }
+      if(/明晚|今晚/.test(w)){ defH = 20; dayMer = 'pm'; }
+    }
+
+    // 4) 下周X / 周三 / 星期三
+    if(m = take(/\s*(下下|下|这|本)?\s*(?:周|星期|礼拜)\s*([一二三四五六日天末])/)){
+      var pref = m[1] || '';
+      var wd = wdIndex(m[2]);
+      var isoBase = (now.getDay() + 6) % 7;
+      var isoTarget = (wd + 6) % 7;
+      var diff;
+      if(pref === '下'){ diff = isoTarget - isoBase + 7; }
+      else if(pref === '下下'){ diff = isoTarget - isoBase + 14; }
+      else if(pref === '这' || pref === '本'){ diff = isoTarget - isoBase; if(diff < 0) diff += 7; }
+      else { diff = (isoTarget - isoBase + 7) % 7; }
+      weekdayDate = startOfDay(now);
+      weekdayDate.setDate(weekdayDate.getDate() + diff);
+    }
+
+    // 5) 10月31日 / 3月5号
+    if(m = take(/\s*(\d{1,2}|[一二三四五六七八九十]{1,3})\s*月\s*(\d{1,2}|[一二三四五六七八九十]{1,3})\s*[日号]/)){
+      var mo = toNum(m[1]), dy = toNum(m[2]);
+      if(mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31){
+        var cand = new Date(now.getFullYear(), mo-1, dy);
+        if(startOfDay(cand) < startOfDay(now)) cand = new Date(now.getFullYear()+1, mo-1, dy);
+        absDate = cand;
+      }
+    }
+
+    // 6) time: 15:30 / 下午 3 点 / 晚上 8 点半
+    if(m = take(/\s*(\d{1,2})\s*[:：]\s*(\d{1,2})\s*/)){
+      hh = parseInt(m[1],10); mm = parseInt(m[2],10); hasTime = true;
+    } else if(m = take(/\s*(凌晨|早上|早晨|上午|中午|下午|傍晚|晚上|晚|夜里|夜间)?\s*(\d{1,2}|[一二三四五六七八九十]{1,3})\s*[点時时]\s*(半|\d{1,2}|[一二三四五六七八九十]{1,3})?\s*分?\s*/)){
+      var mer = m[1] || '';
+      hh = toNum(m[2]);
+      if(m[3] === '半') mm = 30;
+      else if(m[3]) mm = toNum(m[3]) || 0;
+      else mm = 0;
+      if(hh !== null){
+        if(/下午|傍晚|晚上|夜里|夜间|晚/.test(mer) && hh < 12) hh += 12;
+        if(/中午/.test(mer) && hh < 11) hh += 12;
+        if(/凌晨/.test(mer) && hh === 12) hh = 0;
+        hasTime = true;
+      }
+    }
+    if(hh !== null && (hh > 23 || hh < 0)){ hh = null; hasTime = false; }
+    if(mm > 59) mm = 0;
+    if(hasTime && dayMer === 'pm' && hh < 12) hh += 12;
+    if(hasTime && dayMer === 'am' && hh === 12) hh = 0;
+
+    var title = s.replace(/[，,。.、；;：:!！?？~～\-—]/g, ' ')
+      .replace(/(提醒我一下|提醒我|提醒一下|提醒|记一下|记下|记得|别忘了|帮我|要记得)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if(!title) title = src.replace(/\s+/g, ' ').trim();
+
+    return assemble({
+      title:title, repeat:repeat, repeatWeekday:repeatWeekday, repeatMonthDay:repeatMonthDay,
+      dayShift:dayShift, absDate:absDate, weekdayDate:weekdayDate,
+      hh:hh, mm:mm, hasTime:hasTime, durMs:durMs, defH:defH
+    }, now);
+  }
+
+  /* ============ English natural-language parser ============ */
+  var EN_DAYS = {
+    sunday:0, sun:0, monday:1, mon:1, tuesday:2, tue:2, tues:2, wednesday:3, wed:3,
+    thursday:4, thu:4, thur:4, thurs:4, friday:5, fri:5, saturday:6, sat:6
+  };
+  var EN_MONTHS = {
+    january:0, jan:0, february:1, feb:1, march:2, mar:2, april:3, apr:3, may:4,
+    june:5, jun:5, july:6, jul:6, august:7, aug:7, september:8, sep:8, sept:8,
+    october:9, oct:9, november:10, nov:10, december:11, dec:11
+  };
+  var EN_NUM = {
+    a:1, an:1, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8,
+    nine:9, ten:10, eleven:11, twelve:12, fifteen:15, twenty:20, thirty:30,
+    forty:40, 'forty-five':45, 'forty five':45, 'half a':0.5, 'half an':0.5, half:0.5
+  };
+  var EN_DAY_WORDS = 'mon|monday|tue|tues|tuesday|wed|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday';
+  var EN_MONTH_WORDS = 'jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december';
+
+  function numEn(str){
+    str = String(str).toLowerCase().trim();
+    if(/^\d+$/.test(str)) return parseInt(str,10);
+    if(EN_NUM[str] !== undefined) return EN_NUM[str];
+    return 0;
+  }
+
+  function parseEn(raw, now){
+    var src = String(raw).trim();
+    var s = ' ' + src + ' ';
+
+    var repeat = 'none', repeatWeekday = null, repeatMonthDay = null;
+    var dayShift = null, absDate = null, weekdayDate = null;
+    var hh = null, mm = 0, hasTime = false;
+    var durMs = null, defH = 9, dayMer = '';
+
+    function take(re){
+      var m = s.match(re);
+      if(m){ s = s.replace(m[0], ' '); return m; }
+      return null;
+    }
+    var m;
+
+    // 1) repeat rules
+    if(take(/\s*\b(?:every\s*day|everyday|daily)\b\s*/i)){
+      repeat = 'daily';
+    } else if(m = take(new RegExp('\\s*\\b(?:every|each)\\s+(' + EN_DAY_WORDS + ')\\b\\s*','i'))){
+      repeat = 'weekly'; repeatWeekday = EN_DAYS[m[1].toLowerCase()];
+    } else if(take(/\s*\b(?:every|each)\s+week\b\s*/i)){
+      repeat = 'weekly'; repeatWeekday = now.getDay();
+    } else if(m = take(/\s*\b(?:every|each)\s+month\s+(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\b\s*/i)){
+      repeat = 'monthly'; repeatMonthDay = parseInt(m[1],10) || 1;
+    } else if(take(/\s*\b(?:every|each)\s+month\b\s*/i)){
+      repeat = 'monthly'; repeatMonthDay = now.getDate();
+    } else if(m = take(/\s*\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b\s*/i)){
+      repeat = 'monthly'; repeatMonthDay = parseInt(m[1],10) || 1;
+    }
+
+    // 2) relative duration: in 30 minutes / in 2 hours / in half an hour
+    if(m = take(/\s*\bin\s+(\d{1,3}|an?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty[- ]five|half an?|half)\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?)\b\s*/i)){
+      var n = numEn(m[1]), u = m[2].toLowerCase();
+      var mult = /^s/.test(u) ? 1000
+               : /^mi/.test(u) ? 60000
+               : /^h/.test(u) ? 3600000
+               : /^w/.test(u) ? 604800000
+               : /^mo/.test(u) ? 2592000000
+               : 86400000;
+      durMs = n * mult;
+    }
+
+    // 3) day words
+    if(m = take(/\s*\b(day after tomorrow|tomorrow morning|tomorrow afternoon|tomorrow evening|tomorrow night|tomorrow|today|tonight|this morning|this afternoon|this evening|tmr)\b\s*/i)){
+      var w = m[1].toLowerCase();
+      if(w === 'day after tomorrow') dayShift = 2;
+      else if(w.indexOf('tomorrow') === 0 || w === 'tmr') dayShift = 1;
+      else dayShift = 0;
+      if(/morning/.test(w)){ defH = 9; dayMer = 'am'; }
+      if(/afternoon/.test(w)){ defH = 14; dayMer = 'pm'; }
+      if(/evening|night|tonight/.test(w)){ defH = 20; dayMer = 'pm'; }
+    }
+
+    // 4) next Wednesday / on friday
+    if(m = take(new RegExp('\\s*\\b(next|this|coming)\\s+(' + EN_DAY_WORDS + ')\\b\\s*','i'))){
+      var pref = m[1].toLowerCase();
+      var wd1 = EN_DAYS[m[2].toLowerCase()];
+      var base1 = (now.getDay() + 6) % 7, target1 = (wd1 + 6) % 7;
+      var diff1 = (target1 - base1 + 7) % 7;
+      if(pref === 'next' && diff1 === 0) diff1 = 7;
+      weekdayDate = startOfDay(now);
+      weekdayDate.setDate(weekdayDate.getDate() + diff1);
+    } else if(m = take(new RegExp('\\s*\\b(?:on\\s+)?(' + EN_DAY_WORDS + ')\\b\\s*','i'))){
+      var wd2 = EN_DAYS[m[1].toLowerCase()];
+      var base2 = (now.getDay() + 6) % 7, target2 = (wd2 + 6) % 7;
+      weekdayDate = startOfDay(now);
+      weekdayDate.setDate(weekdayDate.getDate() + (target2 - base2 + 7) % 7);
+    }
+
+    // 5) Oct 31 / 31 October
+    if(m = take(new RegExp('\\s*\\b(' + EN_MONTH_WORDS + ')\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b\\s*','i'))){
+      var mo1 = EN_MONTHS[m[1].toLowerCase()], dy1 = parseInt(m[2],10);
+      if(mo1 !== undefined && dy1 >= 1 && dy1 <= 31){
+        var cand1 = new Date(now.getFullYear(), mo1, dy1);
+        if(startOfDay(cand1) < startOfDay(now)) cand1 = new Date(now.getFullYear()+1, mo1, dy1);
+        absDate = cand1;
+      }
+    } else if(m = take(new RegExp('\\s*\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(' + EN_MONTH_WORDS + ')\\b\\s*','i'))){
+      var mo2 = EN_MONTHS[m[2].toLowerCase()], dy2 = parseInt(m[1],10);
+      if(mo2 !== undefined && dy2 >= 1 && dy2 <= 31){
+        var cand2 = new Date(now.getFullYear(), mo2, dy2);
+        if(startOfDay(cand2) < startOfDay(now)) cand2 = new Date(now.getFullYear()+1, mo2, dy2);
+        absDate = cand2;
+      }
+    }
+
+    // 6) time: 21:00 / 9pm / 9 o'clock / at 9
+    if(m = take(/\s*\b(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?\b\s*/i)){
+      hh = parseInt(m[1],10); mm = parseInt(m[2],10); hasTime = true;
+      if(m[3]) dayMer = m[3].toLowerCase();
+    } else if(m = take(/\s*\b(?:at\s+)?(\d{1,2})\s*(am|pm)\b\s*/i)){
+      hh = parseInt(m[1],10); mm = 0; hasTime = true; dayMer = m[2].toLowerCase();
+    } else if(m = take(/\s*\b(?:at\s+)?(\d{1,2})\s*o'?clock\s*(am|pm)?\b\s*/i)){
+      hh = parseInt(m[1],10); mm = 0; hasTime = true;
+      if(m[2]) dayMer = m[2].toLowerCase();
+    } else if(m = take(/\s*\bat\s+(\d{1,2})\b\s*/i)){
+      hh = parseInt(m[1],10); mm = 0; hasTime = true;
+    }
+
+    if(hh !== null && (hh > 23 || hh < 0)){ hh = null; hasTime = false; }
+    if(mm > 59) mm = 0;
+    if(hasTime && hh !== null){
+      if(dayMer === 'pm' && hh < 12) hh += 12;
+      if(dayMer === 'am' && hh === 12) hh = 0;
+    }
+
+    var title = s.replace(/[,.;:!?~—–\-]+/g, ' ')
+      .replace(/\b(?:remind me to|remind me|reminder to|reminder|don'?t forget to|dont forget to|don'?t forget|remember to|remember|note to self|note that|please|pls|todo|to-do|at)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if(!title) title = src.replace(/\s+/g, ' ').trim();
+
+    return assemble({
+      title:title, repeat:repeat, repeatWeekday:repeatWeekday, repeatMonthDay:repeatMonthDay,
+      dayShift:dayShift, absDate:absDate, weekdayDate:weekdayDate,
+      hh:hh, mm:mm, hasTime:hasTime, durMs:durMs, defH:defH
+    }, now);
+  }
+
+  /* ============ shared date assembly ============ */
+  function assemble(ctx, now){
+    var due = null;
+
+    if(ctx.durMs !== null){
+      due = now.getTime() + ctx.durMs;
+    } else {
+      var day = startOfDay(now);
+      var hasDay = false;
+
+      if(ctx.absDate){ day = startOfDay(ctx.absDate); hasDay = true; }
+      else if(ctx.dayShift !== null){ day.setDate(day.getDate() + ctx.dayShift); hasDay = true; }
+      else if(ctx.weekdayDate){ day = new Date(ctx.weekdayDate.getTime()); hasDay = true; }
+      else if(ctx.repeat === 'weekly' && ctx.repeatWeekday !== null){
+        var ib = (now.getDay()+6)%7, it2 = (ctx.repeatWeekday+6)%7;
+        day.setDate(day.getDate() + (it2 - ib + 7) % 7);
+        hasDay = true;
+      }
+      else if(ctx.repeat === 'monthly' && ctx.repeatMonthDay){
+        day.setDate(Math.min(ctx.repeatMonthDay, daysInMonth(day.getFullYear(), day.getMonth())));
+        hasDay = true;
+      }
+
+      if(hasDay || ctx.hasTime){
+        var H = ctx.hasTime ? ctx.hh : ctx.defH;
+        var M = ctx.hasTime ? ctx.mm : 0;
+        var t = new Date(day.getFullYear(), day.getMonth(), day.getDate(), H, M, 0, 0);
+
+        if(!hasDay && ctx.hasTime && t <= now){ t.setDate(t.getDate() + 1); }
+        if(ctx.repeat === 'daily' && t <= now){ t.setDate(t.getDate() + 1); }
+        if(ctx.repeat === 'weekly' && t <= now){ t.setDate(t.getDate() + 7); }
+        if(ctx.weekdayDate && t <= now){ t.setDate(t.getDate() + 7); }
+        if(ctx.repeat === 'monthly' && t <= now){
+          var dd = t.getDate();
+          t.setDate(1);
+          t.setMonth(t.getMonth() + 1);
+          t.setDate(Math.min(dd, daysInMonth(t.getFullYear(), t.getMonth())));
+        }
+        due = t.getTime();
+      }
+    }
+
+    return {
+      title: ctx.title,
+      due: due,
+      repeat: due === null ? 'none' : ctx.repeat,
+      repeatWeekday: ctx.repeat === 'weekly' ? ctx.repeatWeekday : null,
+      repeatMonthDay: ctx.repeat === 'monthly' ? ctx.repeatMonthDay : null
+    };
+  }
+
+  /* Try the UI language first, then the other one — people mix languages. */
+  function parseQuick(raw, now){
+    now = now || new Date();
+    var primary = (settings.lang === 'zh') ? parseZh(raw, now) : parseEn(raw, now);
+    if(primary.due) return primary;
+    var other = (settings.lang === 'zh') ? parseEn(raw, now) : parseZh(raw, now);
+    if(other.due) return other;
+    return primary;
+  }
+  /* #endregion parser */
+
+  /* ============ repeat roll-forward ============ */
+  function advance(it, fromTs){
+    var d = new Date(it.due);
+    var nowMs = fromTs || Date.now();
+    var guard = 0;
+    if(it.repeat === 'daily'){
+      do{ d.setDate(d.getDate() + 1); }while(d.getTime() <= nowMs && ++guard < 800);
+    } else if(it.repeat === 'weekly'){
+      do{ d.setDate(d.getDate() + 7); }while(d.getTime() <= nowMs && ++guard < 200);
+    } else if(it.repeat === 'monthly'){
+      var targetDay = it.repeatMonthDay || d.getDate();
+      do{
+        var keep = d.getDate();
+        d.setDate(1);
+        d.setMonth(d.getMonth() + 1);
+        d.setDate(Math.min(targetDay || keep, daysInMonth(d.getFullYear(), d.getMonth())));
+      }while(d.getTime() <= nowMs && ++guard < 120);
+    }
+    return d.getTime();
+  }
+
+  /* ============ sound ============ */
+  var actx = null, beepTimer = null;
+  function beep(){
+    if(!settings.sound) return;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      actx = actx || new AC();
+      if(actx.state === 'suspended') actx.resume();
+      var t0 = actx.currentTime;
+      [0, 0.19, 0.38].forEach(function(off, i){
+        var o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine';
+        o.frequency.value = (i === 2) ? 988 : 1175;
+        g.gain.setValueAtTime(0.0001, t0 + off);
+        g.gain.exponentialRampToValueAtTime(0.22, t0 + off + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + 0.17);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t0 + off); o.stop(t0 + off + 0.2);
+      });
+    }catch(e){}
+  }
+  function startSound(){
+    beep();
+    clearInterval(beepTimer);
+    beepTimer = setInterval(beep, 1900);
+  }
+  function stopSound(){ clearInterval(beepTimer); beepTimer = null; }
+
+  /* ============ system notification ============ */
+  function askNotify(){
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'default'){
+      try{ Notification.requestPermission(); }catch(e){}
+    }
+  }
+  function fireNotify(it){
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    try{
+      var n = new Notification(it.title, { body: t('notifBody'), tag: 'jot-'+it.id });
+      n.onclick = function(){ window.focus(); n.close(); };
+    }catch(e){}
+  }
+
+  /* ============ calendar (.ics) export ============ */
+  function icsStamp(ms){
+    var d = new Date(ms);
+    return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' +
+           pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + '00Z';
+  }
+  function icsEsc(str){
+    return String(str).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  }
+  function icsRule(it){
+    if(it.repeat === 'daily') return 'RRULE:FREQ=DAILY';
+    if(it.repeat === 'weekly'){
+      var wd = (it.repeatWeekday === null || it.repeatWeekday === undefined) ? new Date(it.due).getDay() : it.repeatWeekday;
+      return 'RRULE:FREQ=WEEKLY;BYDAY=' + ICS_WD[wd];
+    }
+    if(it.repeat === 'monthly'){
+      var d = it.repeatMonthDay || new Date(it.due).getDate();
+      return 'RRULE:FREQ=MONTHLY;BYMONTHDAY=' + d;
+    }
+    return '';
+  }
+  function buildICS(list){
+    var lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Jot//Jot Reminder//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH'
+    ];
+    list.forEach(function(it){
+      if(!it.due) return;
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:' + it.id + '@jot');
+      lines.push('DTSTAMP:' + icsStamp(Date.now()));
+      lines.push('DTSTART:' + icsStamp(it.due));
+      lines.push('DTEND:' + icsStamp(it.due + 5 * 60000));
+      lines.push('SUMMARY:' + icsEsc(it.title));
+      lines.push('DESCRIPTION:' + icsEsc(isZh() ? '来自 Jot 记一下' : 'From Jot'));
+      var rule = icsRule(it);
+      if(rule) lines.push(rule);
+      lines.push('BEGIN:VALARM');
+      lines.push('ACTION:DISPLAY');
+      lines.push('DESCRIPTION:' + icsEsc(it.title));
+      lines.push('TRIGGER:PT0S');
+      lines.push('END:VALARM');
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  }
+
+  function deliverICS(text, filename){
+    // The macOS shell listens on this bridge and hands the file to Calendar.app
+    if(window.__JOT_DESKTOP__ && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.jot){
+      try{
+        window.webkit.messageHandlers.jot.postMessage({ filename: filename, content: text });
+        return true;
+      }catch(e){}
+    }
+    var blob = new Blob([text], { type:'text/calendar;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+    return true;
+  }
+
+  function exportOne(id){
+    var it = byId(id);
+    if(!it || !it.due) return;
+    deliverICS(buildICS([it]), 'jot-' + it.id + '.ics');
+    toast(t('calSent'));
+  }
+  function exportAll(){
+    var timed = items.filter(function(i){ return i.status === 'pending' && i.due; });
+    if(!timed.length){ toast(t('calEmpty')); return; }
+    deliverICS(buildICS(timed), 'jot-reminders.ics');
+    toast(t('calSent'));
+  }
+
+  /* ============ render ============ */
+  function itemHTML(it){
+    var now = Date.now();
+    var isDone = it.status === 'done';
+    var overdue = !isDone && it.due && it.due <= now;
+    var meta = [];
+
+    if(isDone){
+      if(it.doneAt) meta.push(dayLabel(new Date(it.doneAt), new Date(now)) + ' ' + clockLabel(new Date(it.doneAt)) + ' ' + t('doneSuffix'));
+    } else if(it.due){
+      meta.push('<b>' + dueLabel(it.due, new Date(now)) + '</b>');
+      meta.push('<span data-cd="' + it.id + '">' + remainLabel(it.due, now) + '</span>');
+    } else {
+      meta.push(t('untimed'));
+    }
+
+    var tag = repeatTag(it);
+    var calBtn = (!isDone && it.due)
+      ? '<button class="icon" data-act="cal" aria-label="' + esc(t('actCal')) + '" title="' + esc(t('actCal')) + '">' + ICON.cal + '</button>'
+      : '';
+
+    return '<div class="item' + (isDone?' done':'') + (overdue?' overdue':'') + '" data-id="' + it.id + '">' +
+      '<div class="item-main">' +
+        '<div class="item-title">' + esc(it.title) + '</div>' +
+        '<div class="item-meta">' + meta.join('<i>·</i>') + (tag ? '<span class="tag">' + tag + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="item-actions">' +
+        calBtn +
+        '<button class="icon" data-act="done" aria-label="' + esc(t('actDone')) + '" title="' + esc(t('actDone')) + '">' + ICON.check + '</button>' +
+        '<button class="icon danger" data-act="del" aria-label="' + esc(t('actDelete')) + '" title="' + esc(t('actDelete')) + '">' + ICON.trash + '</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function groupHTML(title, arr, total){
+    if(!arr.length) return '';
+    return '<div class="group-head">' + title + ' <span class="n">' + (total === undefined ? arr.length : total) + '</span></div>' + arr.join('');
+  }
+
+  function render(){
+    var now = Date.now();
+    var pending = items.filter(function(i){ return i.status === 'pending'; });
+    var timed = pending.filter(function(i){ return !!i.due; }).sort(function(a,b){ return a.due - b.due; });
+    var untimed = pending.filter(function(i){ return !i.due; }).sort(function(a,b){ return b.createdAt - a.createdAt; });
+    var doneAll = items.filter(function(i){ return i.status === 'done'; });
+    var done = doneAll.sort(function(a,b){ return (b.doneAt||0) - (a.doneAt||0); }).slice(0, 10);
+
+    var html = '';
+    if(!pending.length && !done.length){
+      html = '<div class="empty"><div class="ic">' + ICON.bell + '</div>' +
+             '<p>' + esc(t('emptyTitle')) + '</p><span>' + esc(t('emptySub')) + '</span></div>';
+    } else {
+      html += groupHTML(t('groupTimed'), timed.map(itemHTML));
+      html += groupHTML(t('groupList'), untimed.map(itemHTML));
+      html += groupHTML(t('groupDone'), done.map(itemHTML), doneAll.length);
+    }
+    listEl.innerHTML = html;
+
+    var exportBtn = $('#exportAll');
+    if(exportBtn){
+      exportBtn.hidden = !timed.length;
+      exportBtn.textContent = t('exportAll');
+    }
+  }
+
+  function updateCountdowns(){
+    var now = Date.now();
+    var nodes = listEl.querySelectorAll('[data-cd]');
+    for(var i=0;i<nodes.length;i++){
+      var it = byId(nodes[i].getAttribute('data-cd'));
+      if(it && it.due) nodes[i].textContent = remainLabel(it.due, now);
+    }
+  }
+
+  /* ============ toast ============ */
+  var toastTimer = null;
+  function toast(msg, actionText, onAction){
+    toastEl.innerHTML = esc(msg) + (actionText ? '<b>' + esc(actionText) + '</b>' : '');
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, actionText ? 5200 : 2200);
+    if(actionText){
+      toastEl.onclick = function(){
+        toastEl.classList.remove('show');
+        clearTimeout(toastTimer);
+        onAction && onAction();
+      };
+    } else {
+      toastEl.onclick = null;
+    }
+  }
+
+  /* ============ live preview ============ */
+  function renderPreview(){
+    var v = inputEl.value.trim();
+    if(!v){
+      previewEl.innerHTML = '<span class="dim">' + esc(t('hint')) + '</span>';
+      return;
+    }
+    var p = parseQuick(v);
+    if(p.due){
+      var now = new Date();
+      previewEl.innerHTML = esc(t('willRing')) + ' <span class="k">' + dueLabel(p.due, now) + '</span>' +
+        '<span class="dim">' + remainLabel(p.due, now.getTime()) + '</span>' +
+        (repeatTag(p) ? '<span class="tag">' + repeatTag(p) + '</span>' : '');
+    } else {
+      previewEl.innerHTML = '<span class="dim">' + esc(t('noTime')) + '</span>';
+    }
+  }
+
+  /* ============ create / update / delete ============ */
+  function newItem(p, fallbackTitle){
+    return {
+      id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title: p.title || fallbackTitle,
+      due: p.due,
+      repeat: p.repeat,
+      repeatWeekday: p.repeatWeekday,
+      repeatMonthDay: p.repeatMonthDay,
+      status: 'pending',
+      createdAt: Date.now(),
+      doneAt: null,
+      firedAt: null
+    };
+  }
+
+  function addFromText(text){
+    var v = String(text || '').trim();
+    if(!v) return null;
+    var p = parseQuick(v);
+    var it = newItem(p, v);
+    items.push(it);
+    persist();
+    render();
+    return it;
+  }
+
+  function complete(id){
+    var it = byId(id);
+    if(!it) return;
+    it.status = 'done';
+    it.doneAt = Date.now();
+    persist(); render();
+  }
+
+  function removeItem(id){
+    var idx = -1;
+    for(var i=0;i<items.length;i++) if(items[i].id === id){ idx = i; break; }
+    if(idx < 0) return;
+    var backup = items.splice(idx, 1)[0];
+    persist(); render();
+    toast(tf('toDeleted', { t: backup.title }), t('undo'), function(){
+      items.splice(Math.min(idx, items.length), 0, backup);
+      persist(); render();
+      toast(t('restored'));
+    });
+  }
+
+  /* ============ alarm ============ */
+  function checkDue(){
+    if(ringingId) return;
+    var now = Date.now();
+    var dueList = items.filter(function(i){
+      return i.status === 'pending' && i.due && i.due <= now;
+    }).sort(function(a,b){ return a.due - b.due; });
+    if(!dueList.length) return;
+    ring(dueList[0].id, dueList.length);
+  }
+
+  function ring(id, queueLen){
+    var it = byId(id);
+    if(!it) return;
+    ringingId = id;
+    it.firedAt = Date.now();
+
+    $('#alarmTitle').textContent = it.title;
+    var meta = [];
+    if(it.due) meta.push(t('wasDue') + ' ' + dueLabel(it.due, new Date()));
+    if(repeatTag(it)) meta.push(repeatTag(it));
+    $('#alarmMeta').textContent = meta.join(' · ');
+    $('#alarmKicker').textContent = (it.due && it.due < Date.now() - 120000) ? t('kickerMissed') : t('kicker');
+    $('#queue').textContent = (queueLen && queueLen > 1)
+      ? (queueLen === 2 ? t('queueOne') : tf('queueMany', { n: queueLen - 1 }))
+      : '';
+
+    alarmEl.classList.add('show');
+    startSound();
+    fireNotify(it);
+    if(navigator.vibrate) try{ navigator.vibrate([220,120,220]); }catch(e){}
+
+    try{ document.title = '🔔 ' + it.title; }catch(e){}
+  }
+
+  function endRing(){
+    alarmEl.classList.remove('show');
+    stopSound();
+    try{ document.title = t('appTitle'); }catch(e){}
+    var id = ringingId;
+    ringingId = null;
+    persist(); render();
+    setTimeout(checkDue, 350);
+    return id;
+  }
+
+  function ack(){
+    var it = byId(ringingId);
+    if(it){
+      if(it.repeat && it.repeat !== 'none'){
+        it.due = advance(it, Date.now());
+        it.status = 'pending';
+      } else {
+        it.status = 'done';
+        it.doneAt = Date.now();
+      }
+    }
+    endRing();
+    if(it){
+      toast(it.repeat && it.repeat !== 'none'
+        ? tf('nextAt', { w: dueLabel(it.due, new Date()) })
+        : t('completed'));
+    }
+  }
+
+  function snooze(){
+    var it = byId(ringingId);
+    if(it){
+      it.due = Date.now() + 10 * 60000;
+      it.status = 'pending';
+      endRing();
+      toast(t('snoozed'));
+    } else {
+      endRing();
+    }
+  }
+
+  /* ============ events ============ */
+  $('#form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var v = inputEl.value.trim();
+    if(!v){ inputEl.focus(); return; }
+    var it = addFromText(v);
+    inputEl.value = '';
+    renderPreview();
+    askNotify();
+    if(it && it.due){
+      toast(tf('added', { w: dueLabel(it.due, new Date()) }));
+    } else if(it){
+      toast(t('addedList'));
+    }
+  });
+
+  inputEl.addEventListener('input', renderPreview);
+
+  chipsEl.addEventListener('click', function(e){
+    var b = e.target.closest('.chip');
+    if(!b) return;
+    if(b.id === 'openSheet'){ openSheet(); return; }
+    if(b.getAttribute('data-demo')){
+      var demoText = isZh() ? '3 秒后 试听一下闹铃' : 'in 3 seconds test the alarm';
+      var it = addFromText(demoText);
+      if(it) toast(t('demoToast'));
+      inputEl.focus();
+      return;
+    }
+    var txt = b.getAttribute('data-append');
+    inputEl.value = (inputEl.value.trim() ? inputEl.value.trim() + ' ' : '') + txt;
+    renderPreview();
+    inputEl.focus();
+  });
+
+  listEl.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-act]');
+    if(!btn) return;
+    var row = btn.closest('[data-id]');
+    if(!row) return;
+    var id = row.getAttribute('data-id');
+    var act = btn.getAttribute('data-act');
+    if(act === 'done') complete(id);
+    else if(act === 'del') removeItem(id);
+    else if(act === 'cal') exportOne(id);
+  });
+
+  $('#exportAll').addEventListener('click', exportAll);
+  $('#ackBtn').addEventListener('click', ack);
+  $('#snoozeBtn').addEventListener('click', snooze);
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      if(ringingId) ack();
+      else if(sheet.classList.contains('show')) closeSheet();
+    }
+  });
+
+  var soundBtn = $('#soundBtn');
+  function paintSound(){
+    soundBtn.classList.toggle('off', !settings.sound);
+    soundBtn.title = settings.sound ? t('soundOn') : t('soundOff');
+    soundBtn.setAttribute('aria-label', soundBtn.title);
+  }
+  soundBtn.addEventListener('click', function(){
+    settings.sound = !settings.sound;
+    persistSet(); paintSound();
+    toast(settings.sound ? t('soundOnToast') : t('soundOffToast'));
+    if(settings.sound) beep(); else stopSound();
+  });
+
+  // browsers only allow audio after a user gesture
+  document.addEventListener('click', function unlock(){
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC && !actx){ actx = new AC(); }
+      if(actx && actx.state === 'suspended') actx.resume();
+    }catch(e){}
+    document.removeEventListener('click', unlock);
+  }, { once: true });
+
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden){ checkDue(); updateCountdowns(); }
+  });
+
+  /* ============ language ============ */
+  var langBtn = $('#langBtn');
+
+  function buildChips(){
+    var list = (I18N[settings.lang] || I18N.en).chips || [];
+    var html = '';
+    for(var i=0;i<list.length;i++){
+      var c = list[i];
+      var attr = c.act === 'pick' ? ' id="openSheet"'
+               : (c.act === 'demo' ? ' data-demo="1"' : ' data-append="' + esc(c.append) + '"');
+      html += '<button type="button" class="chip"' + attr + '>' + esc(c.text) + '</button>';
+    }
+    chipsEl.innerHTML = html;
+  }
+
+  function applyLang(){
+    document.documentElement.lang = (I18N[settings.lang] || I18N.en).htmlLang;
+    if(!ringingId){ try{ document.title = t('appTitle'); }catch(e){} }
+
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for(var i=0;i<nodes.length;i++) nodes[i].textContent = t(nodes[i].getAttribute('data-i18n'));
+
+    var phs = document.querySelectorAll('[data-i18n-ph]');
+    for(var j=0;j<phs.length;j++) phs[j].setAttribute('placeholder', t(phs[j].getAttribute('data-i18n-ph')));
+
+    var arias = document.querySelectorAll('[data-i18n-aria]');
+    for(var k=0;k<arias.length;k++) arias[k].setAttribute('aria-label', t(arias[k].getAttribute('data-i18n-aria')));
+
+    var titles = document.querySelectorAll('[data-i18n-title]');
+    for(var n=0;n<titles.length;n++) titles[n].title = t(titles[n].getAttribute('data-i18n-title'));
+
+    inputEl.setAttribute('aria-label', t('inputAria'));
+    langBtn.textContent = isZh() ? 'EN' : '中';
+    langBtn.setAttribute('aria-label', isZh() ? 'Switch to English' : '切换到中文');
+    langBtn.title = langBtn.getAttribute('aria-label');
+
+    buildChips();
+    paintSound();
+    render();
+    renderPreview();
+  }
+
+  function setLang(next){
+    settings.lang = (next === 'zh') ? 'zh' : 'en';
+    persistSet();
+    applyLang();
+    if(srLangSync) srLangSync();
+  }
+
+  langBtn.addEventListener('click', function(){ setLang(isZh() ? 'en' : 'zh'); });
+
+  /* ============ date sheet ============ */
+  var sheet = $('#sheet'), sheetTitle = $('#sheetTitle');
+  var sheetDate = $('#sheetDate'), sheetTime = $('#sheetTime');
+  var sheetRepeat = 'none';
+
+  function p2(n){ return n<10 ? '0'+n : ''+n; }
+  function dateStr(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+  function timeStr(d){ return p2(d.getHours())+':'+p2(d.getMinutes()); }
+
+  function paintRepeat(){
+    var btns = document.querySelectorAll('#repeatSeg button');
+    for(var i=0;i<btns.length;i++){
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-repeat') === sheetRepeat);
+    }
+  }
+
+  function openSheet(){
+    var base = new Date(Date.now() + 3600000);
+    base.setMinutes(0, 0, 0);
+    if(base.getHours() < 6) base.setHours(9, 0, 0, 0);
+    sheetTitle.value = inputEl.value.trim();
+    sheetDate.value = dateStr(base);
+    sheetTime.value = timeStr(base);
+    sheetRepeat = 'none';
+    paintRepeat();
+    sheet.classList.add('show');
+    setTimeout(function(){ if(!sheetTitle.value) sheetTitle.focus(); }, 240);
+  }
+  function closeSheet(){ sheet.classList.remove('show'); }
+
+  function saveSheet(){
+    var title = sheetTitle.value.trim();
+    if(!title){ toast(t('needTitle')); sheetTitle.focus(); return; }
+    var dp = (sheetDate.value || '').split('-');
+    var tp = (sheetTime.value || '').split(':');
+    if(dp.length !== 3 || tp.length < 2){ toast(t('needDateTime')); return; }
+
+    var due = new Date(+dp[0], +dp[1]-1, +dp[2], +tp[0], +tp[1], 0, 0).getTime();
+    var it = {
+      id: 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title: title,
+      due: due,
+      repeat: sheetRepeat,
+      repeatWeekday: sheetRepeat === 'weekly' ? new Date(due).getDay() : null,
+      repeatMonthDay: sheetRepeat === 'monthly' ? new Date(due).getDate() : null,
+      status: 'pending',
+      createdAt: Date.now(),
+      doneAt: null,
+      firedAt: null
+    };
+
+    if(due <= Date.now()){
+      if(sheetRepeat === 'none'){ toast(t('pastTime')); return; }
+      it.due = advance(it, Date.now());
+    }
+
+    items.push(it);
+    persist(); render();
+    closeSheet();
+    inputEl.value = ''; renderPreview();
+    askNotify();
+    toast(tf('added', { w: dueLabel(it.due, new Date()) }));
+  }
+
+  $('#presetRow').addEventListener('click', function(e){
+    var b = e.target.closest('[data-preset]');
+    if(!b) return;
+    var p = b.getAttribute('data-preset');
+    var d = new Date();
+    if(p === 'in-30m'){ d = new Date(Date.now() + 30*60000); }
+    else if(p === 'in-1h'){ d = new Date(Date.now() + 60*60000); }
+    else if(p === 'today-20'){
+      d.setHours(20, 0, 0, 0);
+      if(d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    }
+    else if(p === 'tomorrow-9'){ d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); }
+    sheetDate.value = dateStr(d);
+    sheetTime.value = timeStr(d);
+  });
+  $('#repeatSeg').addEventListener('click', function(e){
+    var b = e.target.closest('[data-repeat]');
+    if(!b) return;
+    sheetRepeat = b.getAttribute('data-repeat');
+    paintRepeat();
+  });
+  $('#sheetSave').addEventListener('click', saveSheet);
+  sheet.addEventListener('click', function(e){
+    if(e.target.getAttribute('data-close')) closeSheet();
+  });
+
+  /* ============ voice input (hidden when unsupported) ============ */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var micBtn = $('#micBtn');
+  var srLangSync = null;
+
+  if(SR && micBtn){
+    micBtn.hidden = false;
+    var rec = null, listening = false;
+    try{ rec = new SR(); }catch(e){ rec = null; }
+    if(rec){
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+
+      srLangSync = function(){ rec.lang = isZh() ? 'zh-CN' : 'en-US'; };
+      srLangSync();
+
+      rec.onstart = function(){ listening = true; micBtn.classList.add('rec'); };
+      rec.onresult = function(e){
+        var txt = '';
+        for(var i=0;i<e.results.length;i++) txt += e.results[i][0].transcript;
+        inputEl.value = txt.replace(/\s+/g, ' ').trim();
+        renderPreview();
+      };
+      rec.onerror = function(e){
+        listening = false; micBtn.classList.remove('rec');
+        var err = e && e.error;
+        if(err === 'not-allowed' || err === 'service-not-allowed'){ toast(t('micDenied')); }
+        else if(err === 'network'){ toast(t('micNetwork')); }
+        else if(err && err !== 'aborted' && err !== 'no-speech'){ toast(t('micAgain')); }
+      };
+      rec.onend = function(){
+        listening = false; micBtn.classList.remove('rec');
+        inputEl.focus({ preventScroll: true });
+      };
+      micBtn.addEventListener('click', function(){
+        if(listening){ try{ rec.stop(); }catch(e){} return; }
+        try{
+          rec.start();
+          toast(t('micSpeak'));
+        }catch(e){ toast(t('micFail')); }
+      });
+    } else {
+      micBtn.hidden = true;
+    }
+  }
+
+  /* ============ boot ============ */
+  load();
+  applyLang();
+  inputEl.focus({ preventScroll: true });
+  setInterval(function(){ updateCountdowns(); checkDue(); }, 1000);
+  setTimeout(checkDue, 400);
+
+  // PWA: only meaningful over http(s); the macOS shell and file:// skip it
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
