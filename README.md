@@ -2,7 +2,7 @@
 
 > Type one line. It rings on time.
 
-**[中文说明](README.zh-CN.md)**
+**[中文说明](README.zh-CN.md)** · **[Open Jot →](https://kingcpro.github.io/jot/)**
 
 ![Jot](docs/screenshot-list.png)
 
@@ -15,6 +15,18 @@ The whole app is a single `index.html`. Open the file and it works.
 ```
 open index.html          # that's the install
 ```
+
+Or skip the file:
+
+| | |
+| --- | --- |
+| **In a browser** | <https://kingcpro.github.io/jot/> — installable as an app, works offline after first load |
+| **macOS app** | [Jot.zip](https://github.com/kingcpro/jot/releases/latest) — 1.1 MB, universal (Apple Silicon + Intel), macOS 13+ |
+| **From source** | `./mac/build.sh` → `dist/Jot.app` |
+
+The macOS app is **unsigned and not notarized**, so the first launch is blocked by Gatekeeper:
+right-click → Open, or `xattr -dr com.apple.quarantine /Applications/Jot.app`. It's the same
+`index.html` as the browser version — if you'd rather not trust an unsigned binary, use that.
 
 ## What it does
 

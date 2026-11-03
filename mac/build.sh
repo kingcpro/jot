@@ -10,14 +10,17 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
 # 本机偶尔出现「CommandLineTools 的 swiftc 比 SDK 旧」导致编译失败，这里自动换一个能用的 SDK
+# 第三个参数是 target（如 x86_64-apple-macos13.0），留空即本机架构
 compile() {
-  local src=$1 out=$2
-  if swiftc -O "$src" -o "$out" 2>"$TMP/err.log"; then return 0; fi
+  local src=$1 out=$2 target=${3:-}
+  local tflag=()
+  [ -n "$target" ] && tflag=(-target "$target")
+  if swiftc $tflag -O "$src" -o "$out" 2>"$TMP/err.log"; then return 0; fi
   local sdk
   for sdk in $(find /Library/Developer/CommandLineTools/SDKs \
                     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs \
                     -maxdepth 1 -name 'MacOSX*.sdk' 2>/dev/null | sort -r); do
-    if swiftc -sdk "$sdk" -O "$src" -o "$out" 2>>"$TMP/err.log"; then
+    if swiftc $tflag -sdk "$sdk" -O "$src" -o "$out" 2>>"$TMP/err.log"; then
       echo "  使用 SDK: ${sdk:t}"
       return 0
     fi
@@ -39,7 +42,19 @@ done
 iconutil -c icns "$TMP/AppIcon.iconset" -o "$TMP/AppIcon.icns"
 
 echo "==> 编译应用"
-compile mac/Jot.swift "$TMP/Jot"
+# 默认出通用二进制（Apple Silicon + Intel）；JOT_ARCH=native 只编本机架构，快一点
+if [ "${JOT_ARCH:-universal}" = "universal" ]; then
+  if compile mac/Jot.swift "$TMP/Jot-arm64"  arm64-apple-macos13.0 \
+  && compile mac/Jot.swift "$TMP/Jot-x86_64" x86_64-apple-macos13.0; then
+    lipo -create -output "$TMP/Jot" "$TMP/Jot-arm64" "$TMP/Jot-x86_64"
+    echo "  架构: $(lipo -archs "$TMP/Jot")"
+  else
+    echo "  (交叉编译失败，退回本机架构)"
+    compile mac/Jot.swift "$TMP/Jot"
+  fi
+else
+  compile mac/Jot.swift "$TMP/Jot"
+fi
 
 echo "==> 组装 Jot.app"
 rm -rf "$APP"

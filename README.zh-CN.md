@@ -2,7 +2,7 @@
 
 > 一句话记下来，到点它自己响。
 
-**[English](README.md)**
+**[English](README.md)** · **[直接打开 →](https://kingcpro.github.io/jot/)**
 
 ![Jot](docs/screenshot-zh.png)
 
@@ -14,6 +14,18 @@
 ```
 open index.html          # 这就是安装
 ```
+
+也可以连文件都不用碰：
+
+| | |
+| --- | --- |
+| **浏览器直接用** | <https://kingcpro.github.io/jot/> —— 可「添加到主屏幕」，加载一次之后离线可用 |
+| **macOS 应用** | [Jot.zip](https://github.com/kingcpro/jot/releases/latest) —— 1.1MB，通用二进制（Apple Silicon + Intel），macOS 13+ |
+| **从源码构建** | `./mac/build.sh` → `dist/Jot.app` |
+
+Mac 应用**没有签名、没有公证**，所以第一次打开会被 Gatekeeper 拦住：右键 → 打开，
+或者执行 `xattr -dr com.apple.quarantine /Applications/Jot.app`。它和浏览器版是同一份
+`index.html`——不想信任一个未签名程序的话，直接用网页版就行，这句话是认真的。
 
 ## 能做什么
 
